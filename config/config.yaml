@@ -1,0 +1,53 @@
+# Базовая конфигурация проекта word_builder (общие значения для всех окружений).
+# Профиль выбирается переменной APP_ENV: dev | prod, файл config.<env>.yaml
+# накладывается поверх этого файла. Переменные окружения важнее YAML.
+# Секреты (API-ключи) в файл не записываются — только имена переменных окружения.
+
+app:
+  name: word_builder
+  env: dev               # переопределяется значением APP_ENV
+  host: 127.0.0.1        # адрес API-слоя (uvicorn)
+  port: 8000             # порт API-слоя
+
+ui:
+  host: 127.0.0.1        # адрес Gradio-интерфейса
+  port: 7860             # порт Gradio (по умолчанию у библиотеки)
+  share: false           # true — публичная ссылка Gradio (не для prod)
+
+llm:
+  provider: openai                 # OpenAI-совместимый API
+  model: gpt-oss-120b              # основная модель корпоративного шлюза
+  fallback_model: MiniMax-M2.7     # резервная модель при недоступности основной
+  api_key_env: OPENAI_API_KEY
+  base_url: https://llm.enplus.group/v1
+  fallback_base_url: null          # отдельный шлюз для резервной модели (null — тот же)
+  trust_env: true                  # false — игнорировать HTTP(S)_PROXY из окружения
+  temperature: 0
+  timeout_seconds: 60
+  max_retries: 1                   # один повтор для временных ошибок
+  max_tokens: 1500                 # ограничение длины ответа
+  max_words: 100                   # ограничение списка слов в промпте
+  reasoning_effort: low            # low — меньше скрытых рассуждений, быстрее ответ
+
+cache:
+  enabled: true
+  backend: memory                  # memory (реализован) | file | redis (пока не реализованы)
+  ttl_seconds: 600                 # время жизни записи — 10 минут
+  max_size: 5000                   # максимум записей
+
+logging:
+  enabled: true
+  level: INFO                      # DEBUG | INFO | WARNING | ERROR | CRITICAL
+  console: true                    # вывод в консоль
+  file: true                       # вывод в файл
+  file_path: logs/word_builder.log # относительный путь — от каталога word_builder/
+  json_file: true                  # файл — структурированный JSON (по строке на запись)
+  max_bytes: 5000000               # ротация файла после 5 МБ
+  backup_count: 5                  # хранить 5 архивных файлов
+  format: "%(asctime)s | %(levelname)-8s | %(request_id)s | %(name)s | %(message)s"
+  date_format: "%Y-%m-%d %H:%M:%S"
+
+builder:
+  max_input_length: 100            # максимальная длина исходного слова
+  min_word_length: 2               # минимальная длина слова в результате
+  max_results: 300                 # максимум слов в ответе

@@ -1,0 +1,28 @@
+# Зависимости проекта word_builder (Gradio + LLM + FastAPI).
+# Установка из корня рабочей папки, где лежит .venv:
+#   .venv\Scripts\python.exe -m pip install -r word_builder\requirements.txt
+
+# UI
+gradio>=6.0
+
+# Gradio тянет numpy/pandas. На этом окружении (Windows, Python 3.11)
+# numpy 2.x падает с ImportError: DLL load failed, поэтому фиксируем ветку 1.x,
+# а pandas — совместимую с numpy 1.x.
+numpy>=1.26,<2
+pandas>=2.0,<2.3
+
+# API-слой (корректные HTTP-статусы) и запуск сервера
+fastapi>=0.115
+uvicorn[standard]>=0.30
+pydantic>=2.7
+
+# Клиент LLM API (OpenAI-совместимый chat/completions)
+httpx>=0.27
+
+# Конфигурация и переменные окружения
+PyYAML>=6.0
+python-dotenv>=1.0
+
+# Тесты и линтер
+pytest>=8.0
+ruff>=0.6

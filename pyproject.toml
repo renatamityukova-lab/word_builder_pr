@@ -1,0 +1,25 @@
+# Конфигурация линтера Ruff для проекта word_builder.
+# Запуск из корня рабочей папки: ruff check word_builder
+# Настройки pytest остаются в pytest.ini (он имеет приоритет).
+
+[tool.ruff]
+target-version = "py311"
+line-length = 88
+src = ["."]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "F",   # pyflakes
+    "W",   # pycodestyle warnings
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "UP",  # pyupgrade
+]
+# Длина строки не контролируется линтером: в проекте есть длинные сообщения
+# и табличные строки в docstring'ах.
+ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+# В тестах допустимы «магические» литералы и фикстуры без возвращаемого типа.
+"tests/*" = ["B011"]
