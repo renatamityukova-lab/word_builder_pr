@@ -1,0 +1,96 @@
+name: word_builder CI
+
+# Пайплайн для проекта word_builder как отдельного репозитория:
+# все пути указаны относительно корня проекта (каталог word_builder/).
+# В монорепозитории используется корневой .github/workflows/ci.yml.
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  # dev-профиль использует только значения из config/*.yaml (без секретов).
+  APP_ENV: dev
+
+jobs:
+  secrets:
+    name: Проверка отсутствия секретов
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: .env не должен быть в репозитории
+        run: |
+          if git ls-files --error-unmatch .env 2>/dev/null; then
+            echo "::error::.env попал в git — удалите его из индекса и смените ключ"
+            exit 1
+          fi
+          echo ".env не отслеживается"
+      - name: Поиск ключей в отслеживаемых файлах
+        run: |
+          if git grep -nE 'sk-[A-Za-z0-9_-]{20,}|gh[pousr]_[A-Za-z0-9]{30,}|-----BEGIN [A-Z ]*PRIVATE KEY-----' -- .; then
+            echo "::error::Найдены строки, похожие на секреты. Ключ должен храниться только в .env"
+            exit 1
+          fi
+          echo "Секретов в репозитории не найдено"
+
+  lint:
+    name: Линтер (ruff)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Установить ruff
+        run: python -m pip install --upgrade "ruff>=0.6"
+      - name: Проверить стиль и импорты
+        run: ruff check .
+
+  tests:
+    name: Тесты (pytest)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: requirements.txt
+      - name: Установить зависимости
+        run: python -m pip install -r requirements.txt
+      - name: Запустить тесты
+        run: python -m pytest -q
+
+  build:
+    name: Сборка и проверка конфигурации
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: requirements.txt
+      - name: Установить зависимости
+        run: python -m pip install -r requirements.txt
+      - name: Проверить синтаксис всех модулей
+        run: python -m compileall -q .
+      - name: Проверить загрузку профилей dev и prod
+        run: |
+          python - <<'PY'
+          import os
+
+          from config.settings import get_settings
+
+          for env in ("dev", "prod"):
+              os.environ["APP_ENV"] = env
+              get_settings.cache_clear()
+              settings = get_settings()
+              assert settings.app.env == env, settings.app.env
+              print(f"{env}: host={settings.app.host}, log={settings.logging.level}")
+          PY
